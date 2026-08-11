@@ -1,6 +1,6 @@
 # remiNET mute
 
-**v0.1.0** · Chrome extension
+**v0.1.0** · Chrome & Firefox
 
 RemiliaNET global chat got too much coal?
 
@@ -11,11 +11,16 @@ RemiliaNET global chat got too much coal?
 ## Features
 
 - **Mute from chat** — hover a message → **Mute**
+
 - Hides **sent messages** and **live typing drafts**
+
 - **Remove coal** — one click mutes known coalposters
+
 - **Pause toggle** — show everyone temporarily without clearing the list
+
 - **Export / Import** your mute list
-- Syncs across Chrome when you’re signed in (`chrome.storage.sync`)
+
+- Saves your list in browser storage (syncs when your browser account allows it)
 
 ---
 
@@ -26,6 +31,7 @@ RemiliaNET global chat got too much coal?
 In **v0.1.0**:
 
 - `@stud`
+
 - `@gostphost`
 
 It only *adds* those handles — it won’t clear people you muted yourself. Future versions may add more names to the same button.
@@ -36,24 +42,62 @@ Unmute anyone from the list, or pause all mutes with the toggle.
 
 ## Install
 
-1. Download or clone this repo
+Download the build for your browser from [Releases](https://github.com/veryretarted/reminet-mute/releases):
+
+- **Chrome:** `reminet-mute-v0.10.zip`
+
+- **Firefox:** `reminet-mute-firefox-v0.10.zip`
+
+### Chrome
+
+1. Unzip the Chrome package
+
 2. Chrome → `chrome://extensions`
+
 3. Enable **Developer mode**
-4. **Load unpacked** → select this folder
+
+4. **Load unpacked** → select the unzipped folder
+
 5. Open [remilia.net](https://www.remilia.net) → global chat
+
 6. Hover a message → **Mute**, or open the toolbar icon → **Remove coal**
+
+### Firefox
+
+1. Unzip the Firefox package
+
+2. Firefox → `about:debugging#/runtime/this-firefox`
+
+3. **Load Temporary Add-on…**
+
+4. Select `manifest.json` inside the unzipped folder
+
+5. Open [remilia.net](https://www.remilia.net) → global chat
+
+6. Hover a message → **Mute**, or open the toolbar icon → **Remove coal**
+
+Firefox temporary add-ons are removed when the browser restarts — load again after a restart (or use a signed AMO build for a permanent install).
+
+You can also clone this repo and load the folder directly in Chrome.
 
 ---
 
 ## Usage
 
 | Action | How |
+
 | --- | --- |
+
 | Mute | Hover message → **Mute**, or type a handle in the popup |
+
 | Remove coal | Popup → **Remove coal** |
+
 | Unmute | Popup → **Unmute** |
+
 | Pause mutes | Popup toggle (list is kept) |
+
 | Clear list | Popup → **Clear all** |
+
 | Backup / restore | **Export list** / **Import list** |
 
 ---
@@ -63,7 +107,8 @@ Unmute anyone from the list, or pause all mutes with the toggle.
 To keep your mute list:
 
 1. Replace files in the **same folder**
-2. `chrome://extensions` → **Reload** on the existing card
+
+2. Reload the extension (Chrome: **Reload** on the card; Firefox: load the temporary add-on again)
 
 Don’t remove the extension and load it from a new path every time — that can create a new empty list.
 
@@ -72,8 +117,11 @@ Don’t remove the extension and load it from a new path every time — that can
 ## Notes
 
 - Mutes apply after the SYSTEM *“Welcome to RemiliaNET global chat…”* line appears.
+
 - A status bar under Global Chat shows how many muted messages are hidden in the loaded history.
+
 - On first load with mutes on (or after **Remove coal** if the list is very short), the chat may **briefly scroll up and back down** once so older history can load. After that, scrolling works normally.
+
 - This is client-side only. It is not a server ban and does not affect other users or official clients.
 
 ---
