@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>remiNET mute</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <div class="logo">🪨</div>
+      <div>
+        <h1>remiNET mute</h1>
+        <p class="sub">Client-side mute list for global chat</p>
+      </div>
+    </header>
+
+    <section class="toggle-row">
+      <div class="toggle-label">
+        <strong id="toggleTitle">Mutes active</strong>
+        <span id="toggleHint">Hiding muted users in chat</span>
+      </div>
+      <label class="switch" title="Temporarily show muted users without clearing the list">
+        <input type="checkbox" id="enabledToggle" checked />
+        <span class="slider"></span>
+      </label>
+    </section>
+
+    <section class="coal-row">
+      <button id="coalBtn" type="button" class="coal-btn" title="Mute known coalposters">
+        Remove coal
+      </button>
+      <span class="coal-hint">Mutes known coalposters</span>
+    </section>
+
+    <section class="add-row">
+      <input
+        id="handleInput"
+        type="text"
+        placeholder="handle to mute"
+        autocomplete="off"
+        spellcheck="false"
+      />
+      <button id="muteBtn" type="button">Mute</button>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <span>Muted users</span>
+        <button id="clearBtn" type="button" class="linkish" title="Unmute everyone">
+          Clear all
+        </button>
+      </div>
+      <div id="clearConfirm" class="clear-confirm" hidden>
+        <span>Unmute everyone?</span>
+        <div class="clear-confirm-actions">
+          <button id="clearCancel" type="button" class="io-btn">Cancel</button>
+          <button id="clearYes" type="button" class="danger-btn">Clear</button>
+        </div>
+      </div>
+      <ul id="list" class="list"></ul>
+      <p id="empty" class="empty">No one muted yet. Hover a message and click <strong>Mute</strong>.</p>
+    </section>
+
+    <section class="io-row">
+      <button id="exportBtn" type="button" class="io-btn">Export list</button>
+      <button id="importBtn" type="button" class="io-btn">Import list</button>
+      <input id="importFile" type="file" accept="application/json,.json,text/plain,.txt" hidden />
+    </section>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
