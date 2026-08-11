@@ -44,7 +44,7 @@ Unmute anyone from the list, or pause all mutes with the toggle.
 
 Download the build for your browser from [Releases](https://github.com/veryretarted/reminet-mute/releases):
 
-- **Chrome:** `reminet-mute-v0.11.zip`
+- **Chrome:** `reminet-mute-chrome-v0.11.zip`
 
 - **Firefox:** `reminet-mute-firefox-v0.11.zip`
 
