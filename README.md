@@ -1,6 +1,6 @@
 # remiNET mute
 
-**v0.1.0** · Chrome & Firefox
+**v0.11** · Chrome & Firefox
 
 RemiliaNET global chat got too much coal?
 
@@ -28,11 +28,11 @@ RemiliaNET global chat got too much coal?
 
 **Remove coal** mutes a built-in list of known coalposters.
 
-In **v0.1.0**:
+In **v0.11**:
 
 - `@stud`
-
 - `@gostphost`
+- `@whiterose`
 
 It only *adds* those handles — it won’t clear people you muted yourself. Future versions may add more names to the same button.
 
@@ -44,9 +44,9 @@ Unmute anyone from the list, or pause all mutes with the toggle.
 
 Download the build for your browser from [Releases](https://github.com/veryretarted/reminet-mute/releases):
 
-- **Chrome:** `reminet-mute-v0.10.zip`
+- **Chrome:** `reminet-mute-v0.11.zip`
 
-- **Firefox:** `reminet-mute-firefox-v0.10.zip`
+- **Firefox:** `reminet-mute-firefox-v0.11.zip`
 
 ### Chrome
 
@@ -118,7 +118,7 @@ Don’t remove the extension and load it from a new path every time — that can
 
 - Mutes apply after the SYSTEM *“Welcome to RemiliaNET global chat…”* line appears.
 
-- A status bar under Global Chat shows how many muted messages are hidden in the loaded history.
+- A status bar under Global Chat shows how many coalposts were avoided in the loaded history.
 
 - On first load with mutes on (or after **Remove coal** if the list is very short), the chat may **briefly scroll up and back down** once so older history can load. After that, scrolling works normally.
 
