@@ -245,8 +245,8 @@
       chip.hidden = false;
       chip.textContent =
         mutedCount === 1
-          ? "1 muted message hidden"
-          : `${mutedCount} muted messages hidden`;
+          ? "1 coalpost avoided"
+          : `${mutedCount} coalposts avoided`;
     } else {
       chip.hidden = true;
     }
