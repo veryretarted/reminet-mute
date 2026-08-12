@@ -344,3 +344,12 @@ button:hover {
   background: #dc2626;
   filter: none;
 }
+
+.section-divider {
+  margin-top: 16px;
+}
+
+.keyword {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+}

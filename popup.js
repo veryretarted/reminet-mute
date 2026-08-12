@@ -2,6 +2,7 @@
   "use strict";
 
   const STORAGE_KEY = "mutedHandles";
+  const KEYWORDS_KEY = "mutedKeywords";
   const ENABLED_KEY = "muteEnabled";
 
   /** Known coalposters — "Remove coal" mutes these. Future versions may add more. */
@@ -23,12 +24,25 @@
   const clearYes = document.getElementById("clearYes");
   const clearCancel = document.getElementById("clearCancel");
 
+  const keywordListEl = document.getElementById("keywordList");
+  const keywordEmptyEl = document.getElementById("keywordEmpty");
+  const keywordInputEl = document.getElementById("keywordInput");
+  const addKeywordBtn = document.getElementById("addKeywordBtn");
+  const clearKeywordsBtn = document.getElementById("clearKeywordsBtn");
+  const clearKeywordsConfirm = document.getElementById("clearKeywordsConfirm");
+  const clearKeywordsYes = document.getElementById("clearKeywordsYes");
+  const clearKeywordsCancel = document.getElementById("clearKeywordsCancel");
+
   function normalize(handle) {
     return String(handle || "")
       .trim()
       .replace(/^~/, "")
       .replace(/^@/, "")
       .toLowerCase();
+  }
+
+  function normalizeKeyword(kw) {
+    return String(kw || "").trim().toLowerCase();
   }
 
   async function notifyTab(msg) {
@@ -100,12 +114,83 @@
     return next;
   }
 
+  function renderKeywords(keywords) {
+    const sorted = [...keywords].map(normalizeKeyword).filter(Boolean).sort();
+    keywordListEl.innerHTML = "";
+    keywordEmptyEl.classList.toggle("hidden", sorted.length > 0);
+
+    for (const kw of sorted) {
+      const li = document.createElement("li");
+      const span = document.createElement("span");
+      span.className = "keyword";
+      span.textContent = kw;
+
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "unmute";
+      btn.textContent = "Remove";
+      btn.addEventListener("click", async () => {
+        const next = sorted.filter((x) => x !== kw);
+        await chrome.storage.sync.set({ [KEYWORDS_KEY]: next });
+        notifyTab({ type: "SET_KEYWORDS", keywords: next });
+        renderKeywords(next);
+      });
+
+      li.appendChild(span);
+      li.appendChild(btn);
+      keywordListEl.appendChild(li);
+    }
+  }
+
+  async function getKeywords() {
+    const result = await chrome.storage.sync.get([KEYWORDS_KEY]);
+    return Array.isArray(result[KEYWORDS_KEY]) ? result[KEYWORDS_KEY] : [];
+  }
+
+  async function addKeyword() {
+    const kw = normalizeKeyword(keywordInputEl.value);
+    if (!kw) return;
+    const list = await getKeywords();
+    const set = new Set(list.map(normalizeKeyword));
+    set.add(kw);
+    const next = Array.from(set);
+    await chrome.storage.sync.set({ [KEYWORDS_KEY]: next });
+    notifyTab({ type: "SET_KEYWORDS", keywords: next });
+    keywordInputEl.value = "";
+    renderKeywords(next);
+  }
+
+  addKeywordBtn.addEventListener("click", addKeyword);
+  keywordInputEl.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") addKeyword();
+  });
+
+  function hideClearKeywordsConfirm() {
+    if (clearKeywordsConfirm) clearKeywordsConfirm.hidden = true;
+  }
+
+  clearKeywordsBtn.addEventListener("click", () => {
+    if (!clearKeywordsConfirm) return;
+    clearKeywordsConfirm.hidden = !clearKeywordsConfirm.hidden;
+  });
+
+  clearKeywordsCancel?.addEventListener("click", hideClearKeywordsConfirm);
+
+  clearKeywordsYes?.addEventListener("click", async () => {
+    hideClearKeywordsConfirm();
+    await chrome.storage.sync.set({ [KEYWORDS_KEY]: [] });
+    notifyTab({ type: "SET_KEYWORDS", keywords: [] });
+    renderKeywords([]);
+  });
+
   async function load() {
-    const result = await chrome.storage.sync.get([STORAGE_KEY, ENABLED_KEY]);
+    const result = await chrome.storage.sync.get([STORAGE_KEY, ENABLED_KEY, KEYWORDS_KEY]);
     const list = Array.isArray(result[STORAGE_KEY]) ? result[STORAGE_KEY] : [];
+    const keywords = Array.isArray(result[KEYWORDS_KEY]) ? result[KEYWORDS_KEY] : [];
     const enabled = result[ENABLED_KEY] !== false; // default on
     setToggleUi(enabled);
     render(list);
+    renderKeywords(keywords);
   }
 
   async function addMute() {
@@ -175,11 +260,12 @@
   });
 
   exportBtn.addEventListener("click", async () => {
-    const list = await getList();
+    const [list, keywords] = await Promise.all([getList(), getKeywords()]);
     const payload = {
       version: 1,
       exportedAt: new Date().toISOString(),
       mutedHandles: list.map(normalize).filter(Boolean).sort(),
+      mutedKeywords: keywords.map(normalizeKeyword).filter(Boolean).sort(),
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], {
       type: "application/json",
@@ -202,6 +288,7 @@
     try {
       const text = await file.text();
       let handles = [];
+      let keywords = [];
 
       // JSON export from this extension
       try {
@@ -210,8 +297,10 @@
           handles = data;
         } else if (Array.isArray(data.mutedHandles)) {
           handles = data.mutedHandles;
+          keywords = Array.isArray(data.mutedKeywords) ? data.mutedKeywords : [];
         } else if (Array.isArray(data.handles)) {
           handles = data.handles;
+          keywords = Array.isArray(data.keywords) ? data.keywords : [];
         }
       } catch {
         // plain text: one handle per line
@@ -219,17 +308,50 @@
       }
 
       handles = handles.map(normalize).filter(Boolean);
-      if (!handles.length) {
-        alert("No handles found in that file.");
+      keywords = keywords.map(normalizeKeyword).filter(Boolean);
+
+      if (!handles.length && !keywords.length) {
+        alert("No handles or keywords found in that file.");
         return;
       }
 
+      const parts = [];
+      if (handles.length) parts.push(`${handles.length} handle(s)`);
+      if (keywords.length) parts.push(`${keywords.length} keyword(s)`);
       const merge = confirm(
-        `Found ${handles.length} handle(s).\n\nOK = merge with current list\nCancel = replace current list`
+        `Found ${parts.join(" and ")}.\n\nOK = merge with current lists\nCancel = replace current lists`
       );
       // confirm: OK=true merge, Cancel=false replace
-      // Actually confirm returns false on Cancel — use that as replace
-      await setList(handles, { merge });
+
+      const [nextHandles, nextKeywords] = await Promise.all([
+        (async () => {
+          if (!handles.length) return null;
+          if (merge) {
+            const existing = await getList();
+            return Array.from(new Set([...existing.map(normalize), ...handles]));
+          }
+          return Array.from(new Set(handles));
+        })(),
+        (async () => {
+          if (!keywords.length) return null;
+          if (merge) {
+            const existing = await getKeywords();
+            return Array.from(new Set([...existing.map(normalizeKeyword), ...keywords]));
+          }
+          return Array.from(new Set(keywords));
+        })(),
+      ]);
+
+      if (nextHandles !== null) {
+        await chrome.storage.sync.set({ [STORAGE_KEY]: nextHandles });
+        notifyTab({ type: "SET_LIST", handles: nextHandles });
+        render(nextHandles);
+      }
+      if (nextKeywords !== null) {
+        await chrome.storage.sync.set({ [KEYWORDS_KEY]: nextKeywords });
+        notifyTab({ type: "SET_KEYWORDS", keywords: nextKeywords });
+        renderKeywords(nextKeywords);
+      }
     } catch (err) {
       alert("Import failed: " + (err?.message || err));
     }
@@ -242,6 +364,12 @@
         ? changes[STORAGE_KEY].newValue
         : [];
       render(list);
+    }
+    if (changes[KEYWORDS_KEY]) {
+      const list = Array.isArray(changes[KEYWORDS_KEY].newValue)
+        ? changes[KEYWORDS_KEY].newValue
+        : [];
+      renderKeywords(list);
     }
     if (changes[ENABLED_KEY]) {
       setToggleUi(changes[ENABLED_KEY].newValue !== false);

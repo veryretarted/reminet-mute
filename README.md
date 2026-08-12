@@ -12,13 +12,15 @@ RemiliaNET global chat got too much coal?
 
 - **Mute from chat** — hover a message → **Mute**
 
+- **Keyword mute** — block any message containing a word or phrase
+
 - Hides **sent messages** and **live typing drafts**
 
 - **Remove coal** — one click mutes known coalposters
 
 - **Pause toggle** — show everyone temporarily without clearing the list
 
-- **Export / Import** your mute list
+- **Export / Import** your mute list and keyword list
 
 - Saves your list in browser storage (syncs when your browser account allows it)
 
@@ -88,17 +90,23 @@ You can also clone this repo and load the folder directly in Chrome.
 
 | --- | --- |
 
-| Mute | Hover message → **Mute**, or type a handle in the popup |
+| Mute user | Hover message → **Mute**, or type a handle in the popup |
+
+| Block keyword | Popup → **Blocked keywords** → type a word → **Block** |
 
 | Remove coal | Popup → **Remove coal** |
 
-| Unmute | Popup → **Unmute** |
+| Unmute user | Popup → **Unmute** next to the handle |
 
-| Pause mutes | Popup toggle (list is kept) |
+| Remove keyword | Popup → **Remove** next to the keyword |
 
-| Clear list | Popup → **Clear all** |
+| Pause mutes | Popup toggle (lists are kept) |
 
-| Backup / restore | **Export list** / **Import list** |
+| Clear mute list | Popup → **Clear all** (under Muted users) |
+
+| Clear keyword list | Popup → **Clear all** (under Blocked keywords) |
+
+| Backup / restore | **Export list** / **Import list** (includes both handles and keywords) |
 
 ---
 
@@ -118,7 +126,9 @@ Don’t remove the extension and load it from a new path every time — that can
 
 - Mutes apply after the SYSTEM *“Welcome to RemiliaNET global chat…”* line appears.
 
-- A status bar under Global Chat shows how many coalposts were avoided in the loaded history.
+- A status bar under Global Chat shows how many messages (by handle or keyword) were hidden in the loaded history.
+
+- Keyword matching is case-insensitive and partial — blocking `egg` also hides messages containing `eggpost`.
 
 - On first load with mutes on (or after **Remove coal** if the list is very short), the chat may **briefly scroll up and back down** once so older history can load. After that, scrolling works normally.
 

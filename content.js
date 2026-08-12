@@ -2,6 +2,7 @@
   "use strict";
 
   const STORAGE_KEY = "mutedHandles";
+  const KEYWORDS_KEY = "mutedKeywords";
   const ENABLED_KEY = "muteEnabled";
   const PROCESSED_ATTR = "data-rm-mute-processed";
   const MUTED_CLASS = "rm-mute-hidden";
@@ -11,6 +12,8 @@
 
   /** @type {Set<string>} */
   let muted = new Set();
+  /** @type {Set<string>} */
+  let mutedKeywords = new Set();
   let muteEnabled = true;
   /** Wait for SYSTEM welcome before filtering */
   let chatReady = false;
@@ -23,10 +26,12 @@
 
   function loadMuted() {
     return new Promise((resolve) => {
-      chrome.storage.sync.get([STORAGE_KEY, ENABLED_KEY], (result) => {
+      chrome.storage.sync.get([STORAGE_KEY, ENABLED_KEY, KEYWORDS_KEY], (result) => {
         const list = Array.isArray(result[STORAGE_KEY]) ? result[STORAGE_KEY] : [];
         muted = new Set(list.map((h) => String(h).toLowerCase()));
         muteEnabled = result[ENABLED_KEY] !== false;
+        const kwList = Array.isArray(result[KEYWORDS_KEY]) ? result[KEYWORDS_KEY] : [];
+        mutedKeywords = new Set(kwList.map((k) => String(k).toLowerCase()));
         resolve(muted);
       });
     });
@@ -34,6 +39,10 @@
 
   function saveMuted() {
     chrome.storage.sync.set({ [STORAGE_KEY]: Array.from(muted) });
+  }
+
+  function saveKeywords() {
+    chrome.storage.sync.set({ [KEYWORDS_KEY]: Array.from(mutedKeywords) });
   }
 
   function normalize(handle) {
@@ -46,7 +55,19 @@
   }
 
   function shouldHide() {
-    return chatReady && muteEnabled && muted.size > 0;
+    return chatReady && muteEnabled && (muted.size > 0 || mutedKeywords.size > 0);
+  }
+
+  function rowMatchesKeyword(row) {
+    if (mutedKeywords.size === 0) return false;
+    const bodyEl = row.querySelector(
+      ".message-row__body, .message-body, .message-text, .message-content, .message-row__text"
+    );
+    const text = ((bodyEl || row).innerText || (bodyEl || row).textContent || "").toLowerCase();
+    for (const kw of mutedKeywords) {
+      if (text.includes(kw)) return true;
+    }
+    return false;
   }
 
   function muteHandle(handle) {
@@ -136,7 +157,7 @@
     for (const row of rows) {
       total += 1;
       const h = row.dataset.rmHandle || extractHandle(row);
-      if (h && muted.has(h)) mutedCount += 1;
+      if ((h && muted.has(h)) || rowMatchesKeyword(row)) mutedCount += 1;
     }
     return { total, mutedCount, visible: total - mutedCount };
   }
@@ -186,13 +207,16 @@
       if (!row.hasAttribute(PROCESSED_ATTR)) {
         row.setAttribute(PROCESSED_ATTR, "pending");
       }
+      if (shouldHide() && mutedKeywords.size > 0) {
+        row.classList.toggle(MUTED_CLASS, rowMatchesKeyword(row));
+      }
       return;
     }
 
     row.setAttribute(PROCESSED_ATTR, handle);
     row.dataset.rmHandle = handle;
 
-    const hide = shouldHide() && muted.has(handle);
+    const hide = shouldHide() && (muted.has(handle) || rowMatchesKeyword(row));
     row.classList.toggle(MUTED_CLASS, hide);
 
     if (!isDraftRow(row)) {
@@ -457,6 +481,13 @@
       muted = new Set(list.map((h) => String(h).toLowerCase()));
       dirty = true;
     }
+    if (changes[KEYWORDS_KEY]) {
+      const list = Array.isArray(changes[KEYWORDS_KEY].newValue)
+        ? changes[KEYWORDS_KEY].newValue
+        : [];
+      mutedKeywords = new Set(list.map((k) => String(k).toLowerCase()));
+      dirty = true;
+    }
     if (changes[ENABLED_KEY]) {
       muteEnabled = changes[ENABLED_KEY].newValue !== false;
       dirty = true;
@@ -466,7 +497,28 @@
 
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     if (msg?.type === "GET_MUTED") {
-      sendResponse({ muted: Array.from(muted), enabled: muteEnabled, chatReady });
+      sendResponse({ muted: Array.from(muted), keywords: Array.from(mutedKeywords), enabled: muteEnabled, chatReady });
+      return true;
+    }
+    if (msg?.type === "ADD_KEYWORD") {
+      const kw = String(msg.keyword || "").toLowerCase().trim();
+      if (kw) { mutedKeywords.add(kw); saveKeywords(); scheduleApply(); }
+      sendResponse({ ok: true });
+      return true;
+    }
+    if (msg?.type === "REMOVE_KEYWORD") {
+      mutedKeywords.delete(String(msg.keyword || "").toLowerCase().trim());
+      saveKeywords();
+      scheduleApply();
+      sendResponse({ ok: true });
+      return true;
+    }
+    if (msg?.type === "SET_KEYWORDS") {
+      const list = Array.isArray(msg.keywords) ? msg.keywords : [];
+      mutedKeywords = new Set(list.map((k) => String(k).toLowerCase().trim()).filter(Boolean));
+      saveKeywords();
+      scheduleApply();
+      sendResponse({ ok: true });
       return true;
     }
     if (msg?.type === "UNMUTE") {

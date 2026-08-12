@@ -62,6 +62,34 @@
       <p id="empty" class="empty">No one muted yet. Hover a message and click <strong>Mute</strong>.</p>
     </section>
 
+    <section class="section-divider">
+      <div class="section-head">
+        <span>Blocked keywords</span>
+        <button id="clearKeywordsBtn" type="button" class="linkish" title="Remove all keywords">
+          Clear all
+        </button>
+      </div>
+      <div class="add-row">
+        <input
+          id="keywordInput"
+          type="text"
+          placeholder="keyword to block"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <button id="addKeywordBtn" type="button">Block</button>
+      </div>
+      <div id="clearKeywordsConfirm" class="clear-confirm" hidden>
+        <span>Remove all keywords?</span>
+        <div class="clear-confirm-actions">
+          <button id="clearKeywordsCancel" type="button" class="io-btn">Cancel</button>
+          <button id="clearKeywordsYes" type="button" class="danger-btn">Clear</button>
+        </div>
+      </div>
+      <ul id="keywordList" class="list"></ul>
+      <p id="keywordEmpty" class="empty">No keywords blocked yet.</p>
+    </section>
+
     <section class="io-row">
       <button id="exportBtn" type="button" class="io-btn">Export list</button>
       <button id="importBtn" type="button" class="io-btn">Import list</button>
