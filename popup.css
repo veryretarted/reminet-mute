@@ -344,3 +344,143 @@ button:hover {
   background: #dc2626;
   filter: none;
 }
+
+.section-divider {
+  margin-top: 16px;
+}
+
+.keyword {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+}
+
+.keyword-meta {
+  font-size: 10px;
+  opacity: 0.65;
+  margin-left: 6px;
+}
+
+.keyword-add {
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.partial-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  opacity: 0.85;
+  white-space: nowrap;
+}
+
+.keyword-hint {
+  margin: 4px 0 8px;
+  font-size: 11px;
+  opacity: 0.7;
+  line-height: 1.35;
+}
+
+.stats-row {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.stats-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+  font-size: 12px;
+}
+
+.stats-head select {
+  font-size: 11px;
+  background: rgba(0, 0, 0, 0.35);
+  color: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  padding: 2px 6px;
+}
+
+.stats-total {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.stats-breakdown {
+  font-size: 11px;
+  opacity: 0.75;
+  margin-top: 2px;
+}
+
+.stats-title {
+  display: block;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+.range-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.range-tab {
+  flex: 1;
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.28);
+  color: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  padding: 6px 4px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.range-tab.is-active {
+  background: rgba(251, 191, 36, 0.22);
+  border-color: rgba(251, 191, 36, 0.55);
+  color: #fde68a;
+}
+
+.mode-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 0.9;
+  white-space: nowrap;
+}
+
+.mode-chip {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  padding: 2px 6px;
+  border-radius: 999px;
+  cursor: pointer;
+  margin-left: 6px;
+  margin-right: auto;
+}
+
+.mode-chip:hover {
+  border-color: rgba(251, 191, 36, 0.5);
+  color: #fde68a;
+}
+
+.list li {
+  align-items: center;
+}

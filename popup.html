@@ -18,12 +18,23 @@
     <section class="toggle-row">
       <div class="toggle-label">
         <strong id="toggleTitle">Mutes active</strong>
-        <span id="toggleHint">Hiding muted users in chat</span>
+        <span id="toggleHint">Hiding muted users & keywords in chat</span>
       </div>
-      <label class="switch" title="Temporarily show muted users without clearing the list">
+      <label class="switch" title="Temporarily show everything without clearing lists">
         <input type="checkbox" id="enabledToggle" checked />
         <span class="slider"></span>
       </label>
+    </section>
+
+    <section class="stats-row">
+      <strong class="stats-title">Total coal avoided</strong>
+      <div id="statsRange" class="range-tabs" role="tablist" aria-label="Stats time range">
+        <button type="button" class="range-tab is-active" data-range="all">All time</button>
+        <button type="button" class="range-tab" data-range="7d">Last 7 days</button>
+        <button type="button" class="range-tab" data-range="24h">Last 24 hours</button>
+      </div>
+      <div id="statsTotal" class="stats-total">0</div>
+      <div id="statsBreakdown" class="stats-breakdown">0 coalposts · 0 coalwords</div>
     </section>
 
     <section class="coal-row">
@@ -54,12 +65,62 @@
       <div id="clearConfirm" class="clear-confirm" hidden>
         <span>Unmute everyone?</span>
         <div class="clear-confirm-actions">
-          <button id="clearCancel" type="button" class="io-btn">Cancel</button>
-          <button id="clearYes" type="button" class="danger-btn">Clear</button>
+          <button id="clearCancel" type="button" class="io-btn">Keep filtering!</button>
+          <button id="clearYes" type="button" class="danger-btn">Give me coal!</button>
+        </div>
+      </div>
+      <div id="itemConfirm" class="clear-confirm" hidden>
+        <span id="itemConfirmMsg">Are you sure?</span>
+        <div class="clear-confirm-actions">
+          <button id="itemConfirmKeep" type="button" class="io-btn">Keep filtering!</button>
+          <button id="itemConfirmCoal" type="button" class="danger-btn">Give me coal!</button>
         </div>
       </div>
       <ul id="list" class="list"></ul>
       <p id="empty" class="empty">No one muted yet. Hover a message and click <strong>Mute</strong>.</p>
+    </section>
+
+    <section class="section-divider">
+      <div class="section-head">
+        <span>Blocked keywords</span>
+        <button id="clearKeywordsBtn" type="button" class="linkish" title="Remove all keywords">
+          Clear all
+        </button>
+      </div>
+      <div class="add-row keyword-add">
+        <input
+          id="keywordInput"
+          type="text"
+          placeholder="keyword to block"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <label class="mode-label" title="On = match inside other words. Off = whole word only.">
+          <input type="checkbox" id="containsToggle" checked />
+          Contains
+        </label>
+        <button id="addKeywordBtn" type="button">Block</button>
+      </div>
+      <p class="keyword-hint">
+        <strong>Contains</strong> matches the letters anywhere (egg → eggpost).
+        Uncheck for <strong>whole word</strong> only. Under 4 letters needs confirmation.
+      </p>
+      <div id="clearKeywordsConfirm" class="clear-confirm" hidden>
+        <span>Stop filtering all keywords?</span>
+        <div class="clear-confirm-actions">
+          <button id="clearKeywordsCancel" type="button" class="io-btn">Keep filtering!</button>
+          <button id="clearKeywordsYes" type="button" class="danger-btn">Give me coal!</button>
+        </div>
+      </div>
+      <div id="shortKeywordConfirm" class="clear-confirm" hidden>
+        <span id="shortKeywordMsg">Short keyword — are you sure?</span>
+        <div class="clear-confirm-actions">
+          <button id="shortKeywordCancel" type="button" class="io-btn">Keep filtering!</button>
+          <button id="shortKeywordYes" type="button" class="danger-btn">Block</button>
+        </div>
+      </div>
+      <ul id="keywordList" class="list"></ul>
+      <p id="keywordEmpty" class="empty">No keywords blocked yet.</p>
     </section>
 
     <section class="io-row">

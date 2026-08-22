@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "remiNET mute",
-  "version": "0.11.0",
-  "description": "Client-side mute for RemiliaNET global chat. Includes Remove coal for known coalposters.",
+  "version": "0.12.0",
+  "description": "Client-side mute for RemiliaNET global chat. Mute users, block keywords, Remove coal.",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAus45wPAG45iVBk38KdYm/zmOMXwKNz90pfpAv2zLfzYiKPAZlgXDtrKLWYBhzHTFgs8yBvRl5QBjZadArrv2pQHi2iHOK0wEx0y81xwV/UUs5UO6MfHNCDwz4KGMWExaioFQUPxIGk8ANwl7yQ1Ka8vzCqH+IUwkS8viDIFf4LKBx2mDnteRMBZOpYv+FK/RnfQAfGNMbva/IrfNIqGvZINb1pYcyq31DeuH1nbgUwonesOXMHTj7XvZVsXdNnMuresEpStyS1Ypge64dVSxJJEXYTRY/d2yd5fredKZtsVmYNfqNbBt9bvHRoohzLUu9EZqjz6UGD4fcG+iKF/o+QIDAQAB",
   "permissions": [
     "storage"

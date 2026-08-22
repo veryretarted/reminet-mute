@@ -2,7 +2,9 @@
   "use strict";
 
   const STORAGE_KEY = "mutedHandles";
+  const KEYWORDS_KEY = "mutedKeywords";
   const ENABLED_KEY = "muteEnabled";
+  const STATS_KEY = "coalStats";
   const PROCESSED_ATTR = "data-rm-mute-processed";
   const MUTED_CLASS = "rm-mute-hidden";
   const BTN_CLASS = "rm-mute-btn";
@@ -11,29 +13,72 @@
 
   /** @type {Set<string>} */
   let muted = new Set();
+  /**
+   * Keyword entries: { text: string, partial: boolean }
+   * @type {Array<{text: string, partial: boolean}>}
+   */
+  let keywords = [];
   let muteEnabled = true;
-  /** Wait for SYSTEM welcome before filtering */
   let chatReady = false;
-  /** UI-only: status chip shows loading; muted rows stay hidden */
   let historyAssist = false;
   let assistRunning = false;
   let observer = null;
   let applyScheduled = false;
   let scrollBound = false;
 
+  /** Session dedupe so each message id is counted at most once per reason */
+  const countedPosts = new Set();
+  const countedWords = new Set();
+
+  function todayKey() {
+    return new Date().toISOString().slice(0, 10);
+  }
+
   function loadMuted() {
     return new Promise((resolve) => {
-      chrome.storage.sync.get([STORAGE_KEY, ENABLED_KEY], (result) => {
-        const list = Array.isArray(result[STORAGE_KEY]) ? result[STORAGE_KEY] : [];
-        muted = new Set(list.map((h) => String(h).toLowerCase()));
-        muteEnabled = result[ENABLED_KEY] !== false;
-        resolve(muted);
-      });
+      chrome.storage.sync.get(
+        [STORAGE_KEY, ENABLED_KEY, KEYWORDS_KEY],
+        (result) => {
+          const list = Array.isArray(result[STORAGE_KEY])
+            ? result[STORAGE_KEY]
+            : [];
+          muted = new Set(list.map((h) => String(h).toLowerCase()));
+          muteEnabled = result[ENABLED_KEY] !== false;
+          keywords = normalizeKeywordList(result[KEYWORDS_KEY]);
+          resolve();
+        }
+      );
     });
+  }
+
+  function normalizeKeywordList(raw) {
+    if (!Array.isArray(raw)) return [];
+    const out = [];
+    const seen = new Set();
+    for (const item of raw) {
+      let text = "";
+      let partial = true;
+      if (typeof item === "string") {
+        text = item.trim().toLowerCase();
+      } else if (item && typeof item === "object") {
+        text = String(item.text || item.keyword || "")
+          .trim()
+          .toLowerCase();
+        partial = item.partial !== false;
+      }
+      if (!text || seen.has(text)) continue;
+      seen.add(text);
+      out.push({ text, partial: !!partial });
+    }
+    return out;
   }
 
   function saveMuted() {
     chrome.storage.sync.set({ [STORAGE_KEY]: Array.from(muted) });
+  }
+
+  function saveKeywords() {
+    chrome.storage.sync.set({ [KEYWORDS_KEY]: keywords });
   }
 
   function normalize(handle) {
@@ -45,8 +90,94 @@
       .toLowerCase();
   }
 
+  /** Filtering active for any reason (users and/or keywords). */
+  function hasActiveFilters() {
+    return muted.size > 0 || keywords.length > 0;
+  }
+
   function shouldHide() {
-    return chatReady && muteEnabled && muted.size > 0;
+    return chatReady && muteEnabled && hasActiveFilters();
+  }
+
+  /**
+   * Message body text only. Never includes username/handle, timestamps,
+   * or other row chrome. Returns "" if nothing usable is left.
+   */
+  function getMessageBodyText(row) {
+    const handle = extractHandle(row);
+    const clone = row.cloneNode(true);
+    if (clone.querySelector) {
+      clone
+        .querySelectorAll(
+          [
+            ".author-chip",
+            "[class*='author-chip']",
+            "[class*='AuthorChip']",
+            "a[href*='~']",
+            "." + BTN_CLASS,
+            ".message-actions",
+            ".message-action-bar",
+            ".message-row__secondary",
+            ".message-row__meta",
+            "time",
+            "[datetime]",
+          ].join(", ")
+        )
+        .forEach((el) => el.remove());
+    }
+
+    const bodyEl = clone.querySelector(
+      [
+        ".message-row__body",
+        ".message-body",
+        ".message-text",
+        ".draft-message__text",
+        ".draft-message__body",
+        "[class*='message-body']",
+        "[class*='MessageBody']",
+      ].join(", ")
+    );
+    // Do NOT use .message-row__content — that wrapper includes the author chip
+    let text = (
+      (bodyEl || clone).innerText ||
+      (bodyEl || clone).textContent ||
+      ""
+    ).toLowerCase();
+
+    if (handle) {
+      const h = handle.toLowerCase();
+      text = text.split(h).join(" ");
+      text = text.split("@" + h).join(" ");
+      text = text.split("~" + h).join(" ");
+    }
+    return text.replace(/\s+/g, " ").trim();
+  }
+
+  function rowMatchesKeyword(row) {
+    if (!keywords.length) return false;
+    const text = getMessageBodyText(row);
+    if (text === null || text === "") return false;
+
+    for (const { text: kw, partial } of keywords) {
+      if (!kw) continue;
+      if (partial) {
+        if (text.includes(kw)) return true;
+      } else {
+        // whole word: unicode-aware-ish boundary
+        const escaped = kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const re = new RegExp(
+          `(^|[^\\p{L}\\p{N}_])${escaped}([^\\p{L}\\p{N}_]|$)`,
+          "iu"
+        );
+        if (re.test(text)) return true;
+      }
+    }
+    return false;
+  }
+
+  function rowMatchesUser(row) {
+    const h = row.dataset.rmHandle || extractHandle(row);
+    return !!(h && muted.has(h));
   }
 
   function muteHandle(handle) {
@@ -87,7 +218,9 @@
     const out = [];
     for (const el of nodeList) {
       if (seen.has(el)) continue;
-      const parentRow = el.parentElement?.closest?.(".message-row, .draft-message");
+      const parentRow = el.parentElement?.closest?.(
+        ".message-row, .draft-message"
+      );
       if (parentRow && parentRow !== el) continue;
       seen.add(el);
       out.push(el);
@@ -119,7 +252,9 @@
     if (!root) return false;
     const text = root.innerText || root.textContent || "";
     if (/welcome to remilianet global chat/i.test(text)) return true;
-    return document.querySelectorAll("div.message-row[data-message-id]").length >= 20;
+    return (
+      document.querySelectorAll("div.message-row[data-message-id]").length >= 20
+    );
   }
 
   function markChatReadyIfNeeded() {
@@ -132,13 +267,42 @@
   function countLoaded() {
     const rows = document.querySelectorAll("div.message-row[data-message-id]");
     let total = 0;
-    let mutedCount = 0;
+    let posts = 0;
+    let words = 0;
     for (const row of rows) {
       total += 1;
-      const h = row.dataset.rmHandle || extractHandle(row);
-      if (h && muted.has(h)) mutedCount += 1;
+      const byUser = rowMatchesUser(row);
+      const byKw = rowMatchesKeyword(row);
+      if (byUser) posts += 1;
+      if (byKw) words += 1;
     }
-    return { total, mutedCount, visible: total - mutedCount };
+    return {
+      total,
+      posts,
+      words,
+      mutedCount: posts + words,
+      visible: total - Math.min(total, posts + words),
+    };
+  }
+
+  function bumpStats(kind, messageId) {
+    if (!messageId) return;
+    const bucket = kind === "post" ? countedPosts : countedWords;
+    if (bucket.has(messageId)) return;
+    bucket.add(messageId);
+
+    chrome.storage.local.get([STATS_KEY], (result) => {
+      const stats = result[STATS_KEY] || {
+        posts: { all: 0, byDay: {} },
+        words: { all: 0, byDay: {} },
+      };
+      const key = kind === "post" ? "posts" : "words";
+      const day = todayKey();
+      stats[key].all = (stats[key].all || 0) + 1;
+      stats[key].byDay = stats[key].byDay || {};
+      stats[key].byDay[day] = (stats[key].byDay[day] || 0) + 1;
+      chrome.storage.local.set({ [STATS_KEY]: stats });
+    });
   }
 
   function ensureMuteButton(row, handle) {
@@ -182,20 +346,29 @@
     }
 
     const handle = extractHandle(row);
-    if (!handle) {
-      if (!row.hasAttribute(PROCESSED_ATTR)) {
-        row.setAttribute(PROCESSED_ATTR, "pending");
-      }
-      return;
+    if (handle) {
+      row.setAttribute(PROCESSED_ATTR, handle);
+      row.dataset.rmHandle = handle;
+    } else if (!row.hasAttribute(PROCESSED_ATTR)) {
+      row.setAttribute(PROCESSED_ATTR, "pending");
     }
 
-    row.setAttribute(PROCESSED_ATTR, handle);
-    row.dataset.rmHandle = handle;
-
-    const hide = shouldHide() && muted.has(handle);
+    const byUser = shouldHide() && handle && muted.has(handle);
+    // Keywords: only when body text is available — never whole-row fallback
+    const byKw = shouldHide() && rowMatchesKeyword(row);
+    const hide = !!(byUser || byKw);
     row.classList.toggle(MUTED_CLASS, hide);
 
-    if (!isDraftRow(row)) {
+    if (hide && !isDraftRow(row)) {
+      const mid =
+        row.getAttribute("data-message-id") ||
+        row.dataset.messageId ||
+        "";
+      if (byUser) bumpStats("post", mid || `u:${handle}:${row.textContent?.slice(0, 40)}`);
+      if (byKw) bumpStats("word", mid || `k:${row.textContent?.slice(0, 40)}`);
+    }
+
+    if (handle && !isDraftRow(row)) {
       ensureMuteButton(row, handle);
       const btn = row.querySelector(`.${BTN_CLASS}`);
       if (btn) {
@@ -204,6 +377,21 @@
         btn.title = listed ? `Unmute @${handle}` : `Mute @${handle}`;
       }
     }
+  }
+
+  function formatStatus(posts, words) {
+    if (posts > 0 && words > 0) {
+      const p = posts === 1 ? "1 coalpost" : `${posts} coalposts`;
+      const w = words === 1 ? "1 coalword" : `${words} coalwords`;
+      return `${p} & ${w} avoided`;
+    }
+    if (posts > 0) {
+      return posts === 1 ? "1 coalpost avoided" : `${posts} coalposts avoided`;
+    }
+    if (words > 0) {
+      return words === 1 ? "1 coalword avoided" : `${words} coalwords avoided`;
+    }
+    return "";
   }
 
   function updateStatusChip() {
@@ -216,12 +404,12 @@
       chip = null;
     }
 
-    if (!(chatReady && muteEnabled && muted.size > 0)) {
+    if (!(chatReady && muteEnabled && hasActiveFilters())) {
       if (chip) chip.hidden = true;
       return;
     }
 
-    const { mutedCount } = countLoaded();
+    const { posts, words } = countLoaded();
     if (!list) return;
 
     if (!chip) {
@@ -241,12 +429,10 @@
       return;
     }
 
-    if (mutedCount > 0) {
+    const label = formatStatus(posts, words);
+    if (label) {
       chip.hidden = false;
-      chip.textContent =
-        mutedCount === 1
-          ? "1 coalpost avoided"
-          : `${mutedCount} coalposts avoided`;
+      chip.textContent = label;
     } else {
       chip.hidden = true;
     }
@@ -280,12 +466,10 @@
       jump();
       requestAnimationFrame(jump);
     });
-    // Catch late layout after muted rows collapse
     setTimeout(jump, 50);
     setTimeout(jump, 200);
   }
 
-  /** Nudge Remilia's top-sentinel loader. */
   function nudgeHistoryLoader() {
     const scroller = getScroller();
     if (!scroller) return;
@@ -297,14 +481,10 @@
     });
   }
 
-  /**
-   * Buffer older history without showing muted users.
-   * Uses a tall invisible spacer so the list can scroll and Remilia's
-   * sentinel can fire; muted rows stay display:none the whole time.
-   */
   async function runHistoryAssist({ rounds = 6, returnToBottom = true } = {}) {
     if (assistRunning) return;
-    if (!chatReady || !muteEnabled || muted.size === 0) return;
+    // Any active filter (users or keywords) can short the list
+    if (!chatReady || !muteEnabled || !hasActiveFilters()) return;
 
     const scroller = getScroller();
     if (!scroller) return;
@@ -313,8 +493,6 @@
     historyAssist = true;
     updateStatusChip();
     ensureAssistSpacer(true);
-
-    // Keep mutes applied — never unhide coal during assist
     applyAllNow();
 
     let idle = 0;
@@ -350,7 +528,9 @@
     const scroller = getScroller();
     if (!scroller) return false;
     if (scroller.scrollHeight <= scroller.clientHeight + 24) return true;
-    const { visible } = countLoaded();
+    const { total, posts, words } = countLoaded();
+    const hidden = Math.min(total, posts + words);
+    const visible = total - hidden;
     return visible < 12;
   }
 
@@ -360,14 +540,10 @@
     if (!scroller) return;
     scrollBound = true;
 
-    // Do NOT run history assist while the user scrolls — that blanked the
-    // chat when new chunks loaded. After the initial assist, Remilia's own
-    // sentinel handles older pages; we only hide new muted rows as they appear.
     scroller.addEventListener(
       "scroll",
       () => {
         if (!shouldHide()) return;
-        // Keep filtered state consistent if React recycled nodes
         if (scroller.scrollTop < 120) {
           for (const row of findMessageRows()) processRow(row);
           updateStatusChip();
@@ -390,7 +566,7 @@
     applyAllNow();
     bindScrollAssist();
 
-    if (becameReady && muteEnabled && muted.size > 0) {
+    if (becameReady && muteEnabled && hasActiveFilters()) {
       requestAnimationFrame(() => {
         if (listIsTooShort()) {
           runHistoryAssist({ rounds: 8, returnToBottom: true });
@@ -399,7 +575,7 @@
     } else if (
       chatReady &&
       muteEnabled &&
-      muted.size > 0 &&
+      hasActiveFilters() &&
       listIsTooShort() &&
       !assistRunning
     ) {
@@ -457,6 +633,10 @@
       muted = new Set(list.map((h) => String(h).toLowerCase()));
       dirty = true;
     }
+    if (changes[KEYWORDS_KEY]) {
+      keywords = normalizeKeywordList(changes[KEYWORDS_KEY].newValue);
+      dirty = true;
+    }
     if (changes[ENABLED_KEY]) {
       muteEnabled = changes[ENABLED_KEY].newValue !== false;
       dirty = true;
@@ -466,7 +646,12 @@
 
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     if (msg?.type === "GET_MUTED") {
-      sendResponse({ muted: Array.from(muted), enabled: muteEnabled, chatReady });
+      sendResponse({
+        muted: Array.from(muted),
+        keywords,
+        enabled: muteEnabled,
+        chatReady,
+      });
       return true;
     }
     if (msg?.type === "UNMUTE") {
@@ -501,6 +686,13 @@
       sendResponse({ ok: true });
       return true;
     }
+    if (msg?.type === "SET_KEYWORDS") {
+      keywords = normalizeKeywordList(msg.keywords);
+      saveKeywords();
+      scheduleApply();
+      sendResponse({ ok: true });
+      return true;
+    }
   });
 
   async function init() {
@@ -522,7 +714,7 @@
       if (pending.length) {
         for (const row of pending) processRow(row);
       }
-      if (chatReady && muteEnabled && muted.size > 0) updateStatusChip();
+      if (chatReady && muteEnabled && hasActiveFilters()) updateStatusChip();
     }, 1200);
   }
 
