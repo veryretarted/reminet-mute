@@ -602,8 +602,16 @@
       "img, video, audio, [class*='attachment'], [class*='Attachment'], [class*='media'], [class*='Media']"
     );
     nodes.forEach((el) => {
-      if (el.classList.contains("rm-mute-avatar-img")) return;
-      if (el.closest(".author-chip, a[href*='~']") && !body?.contains(el)) return;
+      const inBody = !!(body && body.contains(el));
+      const avatarish =
+        el.classList.contains("rm-mute-avatar-img") ||
+        !!el.closest("[class*='avatar'], [class*='Avatar'], .author-chip") ||
+        (!inBody && el.tagName === "IMG") ||
+        (!!el.closest("a[href*='~']") && !inBody);
+      if (avatarish) {
+        el.classList.remove("rm-coal-attach-hidden");
+        return;
+      }
       el.classList.toggle("rm-coal-attach-hidden", on);
     });
   }
