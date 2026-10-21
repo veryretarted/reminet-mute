@@ -7,7 +7,7 @@
   const STATS_KEY = "coalStats";
 
   /** Known coalposters — "Remove coal" mutes these. Future versions may add more. */
-  const COAL_HANDLES = ["stud", "gostphost", "whiterose"];
+  const COAL_HANDLES = ["gostphost", "njz"];
 
   const listEl = document.getElementById("list");
   const emptyEl = document.getElementById("empty");

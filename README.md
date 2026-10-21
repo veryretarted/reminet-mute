@@ -1,6 +1,6 @@
 # remiNET mute
 
-**v0.12.0** · Chrome & Firefox
+**v0.12.2** · Chrome & Firefox
 
 RemiliaNET global chat got too much coal?
 
@@ -14,7 +14,7 @@ RemiliaNET global chat got too much coal?
 - **Keyword block** — hide messages containing a word or phrase (whole-word or partial)
 - Hides **sent messages** and **live typing drafts**
 - **Remove coal** — one click mutes known coalposters
-- **Pause toggle** — show everyone temporarily without clearing lists
+- **Pause toggle** — in the popup or on the status bar under Global Chat
 - **Export / Import** handles and keywords
 - **Coal avoided** stats in the popup (24h / 7d / all time)
 - Saves lists in browser storage (syncs when your browser account allows it)
@@ -25,11 +25,10 @@ RemiliaNET global chat got too much coal?
 
 **Remove coal** mutes a built-in list of known coalposters.
 
-In **v0.12.0**:
+In **v0.12.2**:
 
-- `@stud`
 - `@gostphost`
-- `@whiterose`
+- `@njz`
 
 It only *adds* those handles — it won’t clear people you muted yourself. Future versions may add more names to the same button.
 
@@ -51,8 +50,8 @@ It only *adds* those handles — it won’t clear people you muted yourself. Fut
 
 Download the build for your browser from [Releases](https://github.com/veryretarted/reminet-mute/releases):
 
-- **Chrome:** `reminet-mute-chrome-v0.12.zip`
-- **Firefox:** `reminet-mute-firefox-v0.12.zip`
+- **Chrome:** `reminet-mute-chrome-v0.12.2.zip`
+- **Firefox:** `reminet-mute-firefox-v0.12.2.zip`
 
 ### Chrome
 
@@ -102,10 +101,11 @@ Don’t remove the extension and load it from a new path every time — that can
 ## Notes
 
 - Filtering applies after the SYSTEM *“Welcome to RemiliaNET global chat…”* line appears.
-- Status under Global Chat:
-  - users only → `N coalposts avoided`
-  - keywords only → `N coalwords avoided`
-  - both → `N coalposts & N coalwords avoided`
+- Status under Global Chat (one line, same pink as the chat header):
+  - users only → `N coalposts avoided in loaded chat (lifetime coal: N)`
+  - keywords only → `N coalwords avoided in loaded chat (lifetime coal: N)`
+  - both → `N coalposts and N coalwords avoided in loaded chat (lifetime coal: N)`
+  - **Pause / Resume** sits on that bar
 - Any active filter (users **or** keywords) uses the same history-load helper so the chat stays scrollable when many messages are hidden.
 - On first load with filters on, the chat may **briefly scroll up and back down** once so older history can load.
 - Client-side only. Not a server ban. Does not affect other users or official clients.

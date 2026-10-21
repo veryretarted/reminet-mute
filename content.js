@@ -26,12 +26,43 @@
   let applyScheduled = false;
   let scrollBound = false;
 
-  /** Session dedupe so each message id is counted at most once per reason */
-  const countedPosts = new Set();
-  const countedWords = new Set();
+  const SEEN_POSTS_KEY = "coalSeenPosts";
+  const SEEN_WORDS_KEY = "coalSeenWords";
+
+  /** Unique message ids already counted (persisted). */
+  const seenPostIds = new Set();
+  const seenWordIds = new Set();
+  let lifetimePosts = 0;
+  let lifetimeWords = 0;
+  let statsChain = Promise.resolve();
 
   function todayKey() {
     return new Date().toISOString().slice(0, 10);
+  }
+
+  function emptyStats() {
+    return {
+      posts: { all: 0, byDay: {} },
+      words: { all: 0, byDay: {} },
+    };
+  }
+
+  function loadStats() {
+    return new Promise((resolve) => {
+      chrome.storage.local.get(
+        [STATS_KEY, SEEN_POSTS_KEY, SEEN_WORDS_KEY],
+        (result) => {
+          const stats = result[STATS_KEY] || emptyStats();
+          lifetimePosts = stats.posts?.all || 0;
+          lifetimeWords = stats.words?.all || 0;
+          const posts = result[SEEN_POSTS_KEY] || {};
+          const words = result[SEEN_WORDS_KEY] || {};
+          for (const id of Object.keys(posts)) seenPostIds.add(id);
+          for (const id of Object.keys(words)) seenWordIds.add(id);
+          resolve();
+        }
+      );
+    });
   }
 
   function loadMuted() {
@@ -287,22 +318,40 @@
 
   function bumpStats(kind, messageId) {
     if (!messageId) return;
-    const bucket = kind === "post" ? countedPosts : countedWords;
-    if (bucket.has(messageId)) return;
-    bucket.add(messageId);
+    const seen = kind === "post" ? seenPostIds : seenWordIds;
+    if (seen.has(messageId)) return;
+    seen.add(messageId);
+    if (kind === "post") lifetimePosts += 1;
+    else lifetimeWords += 1;
 
-    chrome.storage.local.get([STATS_KEY], (result) => {
-      const stats = result[STATS_KEY] || {
-        posts: { all: 0, byDay: {} },
-        words: { all: 0, byDay: {} },
-      };
-      const key = kind === "post" ? "posts" : "words";
-      const day = todayKey();
-      stats[key].all = (stats[key].all || 0) + 1;
-      stats[key].byDay = stats[key].byDay || {};
-      stats[key].byDay[day] = (stats[key].byDay[day] || 0) + 1;
-      chrome.storage.local.set({ [STATS_KEY]: stats });
-    });
+    statsChain = statsChain.then(
+      () =>
+        new Promise((resolve) => {
+          chrome.storage.local.get(
+            [STATS_KEY, SEEN_POSTS_KEY, SEEN_WORDS_KEY],
+            (result) => {
+              const stats = result[STATS_KEY] || emptyStats();
+              const seenKey = kind === "post" ? SEEN_POSTS_KEY : SEEN_WORDS_KEY;
+              const seenMap = result[seenKey] || {};
+              if (seenMap[messageId]) {
+                resolve();
+                return;
+              }
+              seenMap[messageId] = todayKey();
+              const bucket = kind === "post" ? "posts" : "words";
+              stats[bucket] = stats[bucket] || { all: 0, byDay: {} };
+              stats[bucket].all = (stats[bucket].all || 0) + 1;
+              stats[bucket].byDay = stats[bucket].byDay || {};
+              const day = todayKey();
+              stats[bucket].byDay[day] = (stats[bucket].byDay[day] || 0) + 1;
+              chrome.storage.local.set(
+                { [STATS_KEY]: stats, [seenKey]: seenMap },
+                () => resolve()
+              );
+            }
+          );
+        })
+    );
   }
 
   function ensureMuteButton(row, handle) {
@@ -380,17 +429,26 @@
   }
 
   function formatStatus(posts, words) {
+    const life = lifetimePosts + lifetimeWords;
+    const lifeBit = `(lifetime coal: ${life})`;
+    let loaded = "";
     if (posts > 0 && words > 0) {
       const p = posts === 1 ? "1 coalpost" : `${posts} coalposts`;
       const w = words === 1 ? "1 coalword" : `${words} coalwords`;
-      return `${p} & ${w} avoided`;
+      loaded = `${p} and ${w} avoided in loaded chat`;
+    } else if (posts > 0) {
+      loaded =
+        posts === 1
+          ? "1 coalpost avoided in loaded chat"
+          : `${posts} coalposts avoided in loaded chat`;
+    } else if (words > 0) {
+      loaded =
+        words === 1
+          ? "1 coalword avoided in loaded chat"
+          : `${words} coalwords avoided in loaded chat`;
     }
-    if (posts > 0) {
-      return posts === 1 ? "1 coalpost avoided" : `${posts} coalposts avoided`;
-    }
-    if (words > 0) {
-      return words === 1 ? "1 coalword avoided" : `${words} coalwords avoided`;
-    }
+    if (loaded) return `${loaded} ${lifeBit}`;
+    if (life > 0) return lifeBit;
     return "";
   }
 
@@ -404,7 +462,8 @@
       chip = null;
     }
 
-    if (!(chatReady && muteEnabled && hasActiveFilters())) {
+    // Show the bar whenever filters exist so the user can pause/resume from chat
+    if (!(chatReady && hasActiveFilters())) {
       if (chip) chip.hidden = true;
       return;
     }
@@ -423,19 +482,54 @@
       }
     }
 
+    // Ensure toggle button exists
+    let btn = chip.querySelector(".rm-mute-status-toggle");
+    if (!btn) {
+      btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "rm-mute-status-toggle";
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        muteEnabled = !muteEnabled;
+        chrome.storage.sync.set({ [ENABLED_KEY]: muteEnabled });
+        scheduleApply();
+      });
+      chip.appendChild(btn);
+    }
+    btn.textContent = muteEnabled ? "Pause" : "Resume";
+    btn.title = muteEnabled
+      ? "Temporarily show everyone (lists kept)"
+      : "Resume hiding muted users and keywords";
+
     if (historyAssist) {
       chip.hidden = false;
-      chip.textContent = "Loading older messages…";
+      chip.dataset.paused = muteEnabled ? "0" : "1";
+      // keep existing text nodes but set status text before the button
+      setChipText(chip, "Loading older messages…");
       return;
     }
 
     const label = formatStatus(posts, words);
-    if (label) {
+    chip.dataset.paused = muteEnabled ? "0" : "1";
+    if (label || !muteEnabled) {
       chip.hidden = false;
-      chip.textContent = label;
+      const pausedNote = muteEnabled ? "" : " · paused";
+      setChipText(chip, (label || "No matches in loaded chat") + pausedNote);
     } else {
       chip.hidden = true;
     }
+  }
+
+  function setChipText(chip, text) {
+    // Preserve the toggle button; replace only the text node
+    let textNode = chip.querySelector(".rm-mute-status-text");
+    if (!textNode) {
+      textNode = document.createElement("span");
+      textNode.className = "rm-mute-status-text";
+      chip.insertBefore(textNode, chip.firstChild);
+    }
+    textNode.textContent = text;
   }
 
   function ensureAssistSpacer(on) {
@@ -697,6 +791,7 @@
 
   async function init() {
     await loadMuted();
+    await loadStats();
     applyAll();
     startObserver();
 
