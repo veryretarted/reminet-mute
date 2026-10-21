@@ -41,8 +41,9 @@ header {
 
 h1 {
   margin: 0;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
+  line-height: 36px;
 }
 
 .sub {
@@ -483,4 +484,35 @@ button:hover {
 
 .list li {
   align-items: center;
+}
+
+.replace-row select {
+  width: 100%;
+  margin-top: 6px;
+  font-size: 12px;
+  background: #0b1220;
+  color: #e2e8f0;
+  color-scheme: dark;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+.replace-row select option,
+.replace-row select optgroup {
+  background: #0b1220;
+  color: #e2e8f0;
+}
+
+.attach-user {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  margin-right: 8px;
+  font-size: 10px;
+  opacity: 0.8;
+  white-space: nowrap;
+}
+.attach-user input {
+  margin: 0;
 }

@@ -1,6 +1,6 @@
 # remiNET mute
 
-**v0.12.2** · Chrome & Firefox
+**v0.13.0** · Chrome & Firefox
 
 RemiliaNET global chat got too much coal?
 
@@ -11,13 +11,40 @@ RemiliaNET global chat got too much coal?
 ## Features
 
 - **Mute from chat** — hover a message → **Mute**
-- **Keyword block** — hide messages containing a word or phrase (whole-word or partial)
+- **Keyword block** — hide messages containing a word or phrase
 - Hides **sent messages** and **live typing drafts**
 - **Remove coal** — one click mutes known coalposters
-- **Pause toggle** — in the popup or on the status bar under Global Chat
+- **Filtering behavior** — full removal, soft removal, milady, coal notice, or bible verse
+- **👁** — show one filtered message for 5 seconds
+- **Hide attachments** — for everyone on the mute list, or per user
+- **Pause** — in the popup or on the status bar under Global Chat
 - **Export / Import** handles and keywords
 - **Coal avoided** stats in the popup (24h / 7d / all time)
 - Saves lists in browser storage (syncs when your browser account allows it)
+
+---
+
+## Filtering behavior
+
+| Mode | What you see |
+| --- | --- |
+| **Full removal** | Message is gone |
+| **Soft removal** | Message stays, greyed out |
+| **milady placeholder** | Time, avatar, and name stay. Text becomes `milady` |
+| **coal notice** | Time, avatar, and name stay. Text becomes a coal notice |
+| **bible verse** | Time, ✝️, citation, and a verse |
+
+Hover a filtered message → **👁** shows the original for 5 seconds.
+
+milady, coal notice, and bible verse always hide attachments.
+
+---
+
+## Attachments
+
+- **Hide attachments** (popup) — hide files from everyone on the mute list, including while paused or revealed
+- **files** on a user — hide that user’s attachments even if the global toggle is off
+- Off, with no per-user box — attachments show when you pause or use **👁**
 
 ---
 
@@ -25,24 +52,22 @@ RemiliaNET global chat got too much coal?
 
 **Remove coal** mutes a built-in list of known coalposters.
 
-In **v0.12.2**:
+In **v0.13.0**:
 
 - `@gostphost`
 - `@njz`
 
-It only *adds* those handles — it won’t clear people you muted yourself. Future versions may add more names to the same button.
+It only *adds* those handles. It does not clear people you muted yourself. Future versions may add more names to the same button.
 
 ---
 
 ## Keywords
 
-- Matching uses **message text only** — not usernames, handles, timestamps, or other UI
-- Blocking the word `x264` does **not** mute a user named `@x264`. Their messages stay visible unless the **message body** contains `x264`
-- **Contains** (default): matches the letters anywhere — `egg` also matches `eggpost`
-- **Whole word**: only standalone words
-- Click the **Contains / Whole word** chip on a keyword to switch mode
-- Re-adding the same keyword with a different mode updates that keyword
-- Keywords under **4 letters** ask for confirmation (they can hide most of chat)
+- **Contains** — matches the letters anywhere (`egg` also matches `eggpost`)
+- **Whole word** — only standalone words
+- Click the chip on a keyword to switch mode
+- Adding the same keyword again with a different mode updates it
+- Keywords under 4 letters ask for confirmation
 
 ---
 
@@ -50,8 +75,8 @@ It only *adds* those handles — it won’t clear people you muted yourself. Fut
 
 Download the build for your browser from [Releases](https://github.com/veryretarted/reminet-mute/releases):
 
-- **Chrome:** `reminet-mute-chrome-v0.12.2.zip`
-- **Firefox:** `reminet-mute-firefox-v0.12.2.zip`
+- **Chrome:** `reminet-mute-chrome-v0.13.0.zip`
+- **Firefox:** `reminet-mute-firefox-v0.13.0.zip`
 
 ### Chrome
 
@@ -69,7 +94,7 @@ Download the build for your browser from [Releases](https://github.com/veryretar
 4. Select `manifest.json` inside the unzipped folder
 5. Open [remilia.net](https://www.remilia.net) → global chat
 
-Firefox temporary add-ons are removed when the browser restarts — load again after a restart (or use a signed AMO build for a permanent install).
+Firefox temporary add-ons are removed when the browser restarts. Load again after a restart, or use a signed AMO build for a permanent install.
 
 You can also clone this repo and load the folder directly in Chrome.
 
@@ -80,10 +105,13 @@ You can also clone this repo and load the folder directly in Chrome.
 | Action | How |
 | --- | --- |
 | Mute user | Hover message → **Mute**, or type a handle in the popup |
-| Block keyword | Popup → keyword field → **Block** (toggle partial/whole word) |
+| Block keyword | Popup → keyword field → **Block** |
+| Change look | Popup → **Filtering behavior** |
+| Show one message | Hover → **👁** (5 seconds) |
 | Remove coal | Popup → **Remove coal** |
 | Unmute / remove keyword | Popup list buttons |
-| Pause filtering | Popup toggle (lists kept) |
+| Pause filtering | Popup toggle, or **Pause** on the status bar |
+| Hide attachments | Popup toggle, or **files** on a user |
 | Clear lists | **Clear all** under users or keywords |
 | Backup / restore | **Export list** / **Import list** |
 
@@ -91,24 +119,22 @@ You can also clone this repo and load the folder directly in Chrome.
 
 ## Updating
 
+To keep your mute list:
+
 1. Replace files in the **same folder**
 2. Reload the extension (Chrome: **Reload** on the card; Firefox: load the temporary add-on again)
 
-Don’t remove the extension and load it from a new path every time — that can create a new empty list.
+Don’t remove the extension and load it from a new path every time. That can create a new empty list.
 
 ---
 
 ## Notes
 
-- Filtering applies after the SYSTEM *“Welcome to RemiliaNET global chat…”* line appears.
-- Status under Global Chat (one line, same pink as the chat header):
-  - users only → `N coalposts avoided in loaded chat (lifetime coal: N)`
-  - keywords only → `N coalwords avoided in loaded chat (lifetime coal: N)`
-  - both → `N coalposts and N coalwords avoided in loaded chat (lifetime coal: N)`
-  - **Pause / Resume** sits on that bar
-- Any active filter (users **or** keywords) uses the same history-load helper so the chat stays scrollable when many messages are hidden.
-- On first load with filters on, the chat may **briefly scroll up and back down** once so older history can load.
-- Client-side only. Not a server ban. Does not affect other users or official clients.
+- Filtering starts after the SYSTEM *“Welcome to RemiliaNET global chat…”* line.
+- Status under Global Chat shows how many coalposts / coalwords were avoided in the loaded chat, plus a lifetime total.
+- **Pause / Resume** sits on that bar.
+- On first load with filters on, the chat may briefly scroll up and back down once so older history can load.
+- This is local to your browser. It is not a server ban and does not affect other users.
 
 ---
 

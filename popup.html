@@ -11,7 +11,6 @@
       <div class="logo">🪨</div>
       <div>
         <h1>remiNET mute</h1>
-        <p class="sub">Client-side mute list for global chat</p>
       </div>
     </header>
 
@@ -42,6 +41,30 @@
         Remove coal
       </button>
       <span class="coal-hint">Mutes known coalposters</span>
+    </section>
+
+
+    <section class="replace-row">
+      <div class="section-head"><span>Filtering behavior</span></div>
+      <select id="replaceMode">
+        <option value="hide">Full removal</option>
+        <option value="soft">Soft removal (grey out)</option>
+        <option value="milady">milady placeholder</option>
+        <option value="coal">coal notice</option>
+        <option value="bible">bible verse</option>
+      </select>
+    </section>
+
+
+    <section class="toggle-row coal-attach-row">
+      <div class="toggle-label">
+        <strong>Hide attachments</strong>
+        <span>Automatically remove attached files from everyone on the mute list, even when paused or revealed. Off = only per-user file toggles apply.</span>
+      </div>
+      <label class="switch" title="Hide attachments from coal-list users even when paused">
+        <input type="checkbox" id="coalAttachToggle" />
+        <span class="slider"></span>
+      </label>
     </section>
 
     <section class="add-row">

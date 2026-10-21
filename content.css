@@ -94,9 +94,9 @@
 }
 
 .rm-mute-btn[title^="Unmute"] {
-  background: rgba(34, 197, 94, 0.2);
-  border-color: rgba(34, 197, 94, 0.45);
-  color: #bbf7d0;
+  background: #16a34a;
+  border-color: #16a34a;
+  color: #fff;
 }
 
 .rm-mute-btn[title^="Unmute"]:hover {
@@ -109,4 +109,134 @@
   .rm-mute-btn {
     opacity: 0.9;
   }
+}
+
+/* replacements sit in the message, do not cover other rows' hover menus */
+/* soft: grey name, avatar, and message text only — never the action buttons */
+.message-row.rm-mute-soft .message-row__body,
+.message-row.rm-mute-soft .author-chip,
+.message-row.rm-mute-soft a[href*="~"],
+.message-row.rm-mute-soft img {
+  opacity: 0.4;
+}
+.message-row.rm-mute-soft .rm-mute-btn,
+.message-row.rm-mute-soft .rm-mute-eye,
+.message-row:hover > .rm-mute-btn,
+.message-row:hover .rm-mute-btn,
+.message-row:hover .rm-mute-eye {
+  opacity: 1 !important;
+  filter: none !important;
+}
+
+/* replacements: original body text is stashed and hidden */
+.message-row.rm-mute-replaced {
+  position: relative;
+}
+.message-row.is-bible {
+  background: rgba(124, 58, 237, 0.1);
+}
+.rm-mute-original {
+  display: none !important;
+}
+.message-row.rm-mute-revealed .rm-mute-original {
+  display: revert !important;
+}
+.message-row.rm-mute-revealed .rm-mute-swap,
+.message-row.rm-mute-revealed .rm-mute-cross,
+.message-row.rm-mute-revealed .rm-mute-cite-name {
+  display: none !important;
+}
+.rm-mute-swap {
+  display: inline;
+  color: #831d2b;
+  font-size: inherit;
+  font-weight: 600;
+  line-height: inherit;
+  vertical-align: baseline;
+}
+.rm-mute-swap.is-verse {
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+  background: none;
+  padding: 0;
+}
+.rm-mute-swap.is-center {
+  display: inline;
+}
+.rm-mute-cross {
+  display: inline-flex;
+  width: 22px;
+  height: 22px;
+  margin-right: 4px;
+  margin-left: -2px;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  line-height: 1;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+.rm-mute-cite-name {
+  display: inline;
+  font-size: inherit;
+  font-weight: 600;
+  color: #7c3aed;
+  background: rgba(124, 58, 237, 0.1);
+  border-radius: 3px;
+  padding: 0 2px;
+  margin-right: 6px;
+  vertical-align: baseline;
+  line-height: inherit;
+}
+.message-row.is-bible .message-row__body {
+  display: inline;
+}
+.rm-mute-avatar-hidden,
+.rm-mute-name-hidden {
+  display: none !important;
+}
+.message-row.rm-mute-replaced.is-milady .author-chip,
+.message-row.rm-mute-replaced.is-milady a[href*="~"],
+.message-row.rm-mute-replaced.is-milady img,
+.message-row.rm-mute-replaced.is-coal .author-chip,
+.message-row.rm-mute-replaced.is-coal a[href*="~"],
+.message-row.rm-mute-replaced.is-coal img {
+  opacity: 0.4;
+}
+.rm-mute-eye:hover,
+.rm-mute-eye:active {
+  background: #831d2b;
+  color: #fff;
+  border-color: #831d2b;
+}
+.rm-mute-eye {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(15, 23, 42, 0.85);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1;
+  padding: 3px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-left: 4px;
+  opacity: 1;
+}
+
+.rm-coal-attach-hidden,
+.message-row.rm-coal-no-attach img,
+.message-row.rm-coal-no-attach video,
+.message-row.rm-coal-no-attach audio {
+  display: none !important;
+}
+
+button[class*="jump" i],
+[class*="jump-to" i],
+[class*="JumpTo"],
+[class*="last-read" i],
+[class*="LastRead"] {
+  z-index: 40 !important;
+  pointer-events: auto !important;
+  opacity: 1 !important;
 }

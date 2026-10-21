@@ -4,6 +4,9 @@
   const STORAGE_KEY = "mutedHandles";
   const KEYWORDS_KEY = "mutedKeywords";
   const ENABLED_KEY = "muteEnabled";
+  const REPLACE_KEY = "replaceMode";
+  const COAL_ATTACH_KEY = "coalHideAttachments";
+  const ATTACH_USERS_KEY = "attachmentHideHandles";
   const STATS_KEY = "coalStats";
 
   /** Known coalposters — "Remove coal" mutes these. Future versions may add more. */
@@ -21,6 +24,8 @@
   const importBtn = document.getElementById("importBtn");
   const importFile = document.getElementById("importFile");
   const coalBtn = document.getElementById("coalBtn");
+  const replaceModeEl = document.getElementById("replaceMode");
+  const coalAttachToggle = document.getElementById("coalAttachToggle");
   const clearConfirm = document.getElementById("clearConfirm");
   const clearYes = document.getElementById("clearYes");
   const clearCancel = document.getElementById("clearCancel");
@@ -51,6 +56,7 @@
   let pendingShort = null;
   let pendingItem = null;
   let statsRange = "all";
+  let attachmentHide = new Set();
 
   function normalize(handle) {
     return String(handle || "")
@@ -125,6 +131,13 @@
     itemConfirm.hidden = false;
   }
 
+  async function setAttachmentHide(next) {
+    attachmentHide = new Set(next.map(normalize).filter(Boolean));
+    await chrome.storage.sync.set({
+      [ATTACH_USERS_KEY]: Array.from(attachmentHide),
+    });
+  }
+
   function render(handles) {
     const sorted = [...handles].map(normalize).filter(Boolean).sort();
     listEl.innerHTML = "";
@@ -136,6 +149,23 @@
       span.className = "handle";
       span.textContent = h;
 
+      const files = document.createElement("label");
+      files.className = "attach-user";
+      files.title = "Always hide this user's attachments, even when mutes are paused";
+      const box = document.createElement("input");
+      box.type = "checkbox";
+      box.checked = attachmentHide.has(h);
+      box.addEventListener("change", async () => {
+        const next = new Set(attachmentHide);
+        if (box.checked) next.add(h);
+        else next.delete(h);
+        await setAttachmentHide(Array.from(next));
+      });
+      const filesText = document.createElement("span");
+      filesText.textContent = "files";
+      files.appendChild(box);
+      files.appendChild(filesText);
+
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "unmute";
@@ -143,6 +173,7 @@
       btn.addEventListener("click", () => askItemConfirm("user", h));
 
       li.appendChild(span);
+      li.appendChild(files);
       li.appendChild(btn);
       listEl.appendChild(li);
     }
@@ -298,11 +329,22 @@
       STORAGE_KEY,
       ENABLED_KEY,
       KEYWORDS_KEY,
+      REPLACE_KEY,
+      COAL_ATTACH_KEY,
+      ATTACH_USERS_KEY,
     ]);
     const list = Array.isArray(result[STORAGE_KEY]) ? result[STORAGE_KEY] : [];
     render(list);
     renderKeywords(result[KEYWORDS_KEY]);
     setToggleUi(result[ENABLED_KEY] !== false);
+    if (replaceModeEl) replaceModeEl.value = result[REPLACE_KEY] || "hide";
+    if (coalAttachToggle) coalAttachToggle.checked = result[COAL_ATTACH_KEY] === true;
+    attachmentHide = new Set(
+      Array.isArray(result[ATTACH_USERS_KEY])
+        ? result[ATTACH_USERS_KEY].map(normalize)
+        : []
+    );
+    render(list);
     await renderStats();
   }
 
@@ -533,10 +575,22 @@
       if (changes[ENABLED_KEY]) {
         setToggleUi(changes[ENABLED_KEY].newValue !== false);
       }
+      if (changes[REPLACE_KEY] && replaceModeEl) {
+        replaceModeEl.value = changes[REPLACE_KEY].newValue || "hide";
+      }
     }
     if (area === "local" && changes[STATS_KEY]) {
       renderStats();
     }
+  });
+
+  replaceModeEl?.addEventListener("change", async () => {
+    const mode = replaceModeEl.value || "hide";
+    await chrome.storage.sync.set({ [REPLACE_KEY]: mode });
+  });
+
+  coalAttachToggle?.addEventListener("change", async () => {
+    await chrome.storage.sync.set({ [COAL_ATTACH_KEY]: coalAttachToggle.checked });
   });
 
   load();
