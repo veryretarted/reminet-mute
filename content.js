@@ -589,6 +589,21 @@
     return false;
   }
 
+  function isProfilePicture(el) {
+    if (!el || el.tagName !== "IMG") return false;
+    if (el.classList.contains("rm-mute-avatar-img")) return true;
+    if (el.closest("[class*='avatar' i], [class*='Avatar'], .author-chip")) return true;
+    const link = el.closest("a[href*='~']");
+    if (!link) return false;
+    const box = el.getBoundingClientRect();
+    const w = box.width || el.width || 0;
+    const h = box.height || el.height || 0;
+    // profile pics are the small linked image; attachments are large
+    if (w && h && w <= 64 && h <= 64) return true;
+    if (!w && !h && link.querySelectorAll("img, video").length === 1 && !link.querySelector("video")) return true;
+    return false;
+  }
+
   function applyCoalAttachmentFilter(row, handle, force) {
     if (row.classList.contains("rm-mute-revealed")) {
       row.classList.remove("rm-coal-no-attach");
@@ -597,18 +612,13 @@
     }
     const on = !!force || shouldHideAttachments(handle);
     row.classList.toggle("rm-coal-no-attach", on);
-    const body = messageBody(row);
     const nodes = row.querySelectorAll(
       "img, video, audio, [class*='attachment'], [class*='Attachment'], [class*='media'], [class*='Media']"
     );
     nodes.forEach((el) => {
-      const inBody = !!(body && body.contains(el));
-      const avatarish =
-        el.classList.contains("rm-mute-avatar-img") ||
-        !!el.closest("[class*='avatar'], [class*='Avatar'], .author-chip") ||
-        (!inBody && el.tagName === "IMG") ||
-        (!!el.closest("a[href*='~']") && !inBody);
-      if (avatarish) {
+      const avatar = isProfilePicture(el);
+      el.classList.toggle("rm-keep-avatar", avatar);
+      if (avatar) {
         el.classList.remove("rm-coal-attach-hidden");
         return;
       }
