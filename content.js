@@ -604,6 +604,25 @@
     return false;
   }
 
+  function isReplyPreviewMedia(el, row) {
+    if (!el || !row) return false;
+    const preview = el.closest(
+      "[class*='reply' i], [class*='quote' i], [class*='parent' i], [class*='referenced' i], [class*='in-reply' i], [class*='reply-to' i]"
+    );
+    if (preview && preview !== row && row.contains(preview)) return true;
+    const rowHandle = (row.dataset.rmHandle || "").toLowerCase();
+    let node = el.parentElement;
+    while (node && node !== row) {
+      const link = node.querySelector(":scope > a[href*='~'], :scope a[href*='~']");
+      if (link) {
+        const m = (link.getAttribute("href") || "").match(/~([a-zA-Z0-9_.\-]+)/);
+        if (m && m[1].toLowerCase() !== rowHandle) return true;
+      }
+      node = node.parentElement;
+    }
+    return false;
+  }
+
   function applyCoalAttachmentFilter(row, handle, force) {
     if (row.classList.contains("rm-mute-revealed")) {
       row.classList.remove("rm-coal-no-attach");
@@ -616,9 +635,10 @@
       "img, video, audio, [class*='attachment'], [class*='Attachment'], [class*='media'], [class*='Media']"
     );
     nodes.forEach((el) => {
-      const avatar = isProfilePicture(el);
-      el.classList.toggle("rm-keep-avatar", avatar);
-      if (avatar) {
+      const keep = isProfilePicture(el) || isReplyPreviewMedia(el, row);
+      el.classList.toggle("rm-keep-avatar", isProfilePicture(el));
+      el.classList.toggle("rm-keep-media", keep);
+      if (keep) {
         el.classList.remove("rm-coal-attach-hidden");
         return;
       }

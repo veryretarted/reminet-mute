@@ -1,6 +1,6 @@
 # remiNET mute
 
-**v0.13.0** · Chrome & Firefox
+**v0.13.1** · Chrome & Firefox
 
 RemiliaNET global chat got too much coal?
 
@@ -52,7 +52,7 @@ milady, coal notice, and bible verse always hide attachments.
 
 **Remove coal** mutes a built-in list of known coalposters.
 
-In **v0.13.0**:
+In **v0.13.1**:
 
 - `@gostphost`
 - `@njz`
@@ -75,8 +75,8 @@ It only *adds* those handles. It does not clear people you muted yourself. Futur
 
 Download the build for your browser from [Releases](https://github.com/veryretarted/reminet-mute/releases):
 
-- **Chrome:** `reminet-mute-chrome-v0.13.0.zip`
-- **Firefox:** `reminet-mute-firefox-v0.13.0.zip`
+- **Chrome:** `reminet-mute-chrome-v0.13.1.zip`
+- **Firefox:** `reminet-mute-firefox-v0.13.1.zip`
 
 ### Chrome
 

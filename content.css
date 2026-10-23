@@ -225,13 +225,14 @@
 }
 
 .rm-coal-attach-hidden,
-.message-row.rm-coal-no-attach img:not(.rm-keep-avatar),
-.message-row.rm-coal-no-attach video,
-.message-row.rm-coal-no-attach audio {
+.message-row.rm-coal-no-attach img:not(.rm-keep-media),
+.message-row.rm-coal-no-attach video:not(.rm-keep-media),
+.message-row.rm-coal-no-attach audio:not(.rm-keep-media) {
   display: none !important;
 }
+.message-row.rm-coal-no-attach .rm-keep-media,
 .message-row.rm-coal-no-attach .rm-keep-avatar {
-  display: inline-block !important;
+  display: revert !important;
 }
 
 button[class*="jump" i],
